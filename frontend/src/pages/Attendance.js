@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { attendanceAPI, downloadFile } from '../services/api';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -20,7 +20,7 @@ const Attendance = () => {
   });
 
   // Load attendance records
-  const loadAttendance = async (params = {}) => {
+  const loadAttendance = useCallback(async (params = {}) => {
     try {
       setLoading(true);
       const response = await attendanceAPI.getAttendance({
@@ -36,7 +36,7 @@ const Attendance = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -92,7 +92,7 @@ const Attendance = () => {
       window.removeEventListener('new-attendance', handleNewAttendance);
       window.removeEventListener('attendance-updated', handleAttendanceUpdated);
     };
-  }, []);
+  }, [loadAttendance]);
 
   return (
     <div className="space-y-6">

@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   UserGroupIcon, 
   PlusIcon, 
   PencilIcon, 
-  TrashIcon,
   MagnifyingGlassIcon,
-  AdjustmentsHorizontalIcon,
   CheckCircleIcon,
-  XCircleIcon,
-  EyeIcon
+  XCircleIcon
 } from '@heroicons/react/24/outline';
 import { UserIcon, ShieldCheckIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
@@ -56,7 +53,7 @@ const Users = () => {
     });
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/api/users', {
@@ -78,7 +75,7 @@ const Users = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, roleFilter]);
 
   const fetchStats = async () => {
     try {
@@ -94,7 +91,7 @@ const Users = () => {
   useEffect(() => {
     fetchUsers();
     fetchStats();
-  }, [currentPage, searchTerm, roleFilter]);
+  }, [fetchUsers]);
 
   const handleCreateUser = async (e) => {
     e.preventDefault();

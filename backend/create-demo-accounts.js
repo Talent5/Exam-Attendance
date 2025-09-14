@@ -29,28 +29,28 @@ const createDemoAccounts = async () => {
     }
 
     // Check if invigilator already exists
-    const existingInvigilator = await User.findOne({ email: 'invigilator@exam.com' });
+    const existingInvigilator = await User.findOne({ username: 'invigilator' });
     if (!existingInvigilator) {
       const invigilatorUser = new User({
-        username: 'invigilator1',
-        fullName: 'John Invigilator',
+        username: 'invigilator',
+        fullName: 'Demo Invigilator',
         email: 'invigilator@exam.com',
-        password: 'invig123',
+        password: 'demo123',
         role: 'invigilator',
         department: 'Academic Affairs',
         employeeId: 'INV001',
         phone: '+1234567891'
       });
       await invigilatorUser.save();
-      console.log('✅ Invigilator account created: invigilator@exam.com / invig123');
+      console.log('✅ Invigilator account created: invigilator / demo123');
     } else {
       console.log('ℹ️  Invigilator account already exists');
     }
 
     console.log('\n🎉 Demo accounts setup complete!');
     console.log('\nDemo Accounts:');
-    console.log('Admin: admin@exam.com / admin123');
-    console.log('Invigilator: invigilator@exam.com / invig123');
+    console.log('Admin: admin / admin123');
+    console.log('Invigilator: invigilator / demo123');
     
     process.exit(0);
   } catch (error) {

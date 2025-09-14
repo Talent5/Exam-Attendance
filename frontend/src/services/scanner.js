@@ -1,5 +1,6 @@
 // Import Socket.IO client for WebSocket communication
 import io from 'socket.io-client';
+import { WS_URL } from '../config/api';
 
 // Scanner WebSocket Service for real-time communication with ESP32 via backend
 class ScannerService {
@@ -13,7 +14,7 @@ class ScannerService {
   }
 
   // Connect to Backend Socket.IO scanner namespace
-  connect(url = 'http://localhost:5000/scanner') {
+  connect(url = `${WS_URL}/scanner`) {
     try {
       this.socket = io(url, {
         transports: ['websocket', 'polling'],

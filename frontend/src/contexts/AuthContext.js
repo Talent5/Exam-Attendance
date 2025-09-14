@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../config/api';
 
 // Initial state
 const initialState = {
@@ -132,7 +133,7 @@ export const AuthProvider = ({ children }) => {
       if (!token) return;
 
       try {
-        const response = await fetch('/api/auth/verify-token', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify-token`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -161,7 +162,7 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -203,7 +204,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async (showToast = true) => {
     try {
       // Call logout endpoint to clear server-side session
-      await fetch('/api/auth/logout', {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -238,7 +239,7 @@ export const AuthProvider = ({ children }) => {
   // Change password
   const changePassword = async (passwordData) => {
     try {
-      const response = await fetch('/api/auth/change-password', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -266,7 +267,7 @@ export const AuthProvider = ({ children }) => {
   // Get current user info from server
   const getCurrentUser = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${state.token}`,

@@ -12,14 +12,7 @@ const RFIDScanner = ({ selectedExam }) => {
     uptime: '00:00:00'
   });
 
-  const [enrollmentData, setEnrollmentData] = useState({
-    isEnrolling: false,
-    step: 0,
-    rfidUid: '',
-    name: '',
-    regNo: '',
-    course: ''
-  });
+
 
   // Connect to scanner service
   useEffect(() => {
@@ -100,16 +93,7 @@ const RFIDScanner = ({ selectedExam }) => {
       if (success) {
         toast.success(`Switching scanner to ${mode} mode...`);
         
-        if (mode === 'ENROLLMENT') {
-          setEnrollmentData({
-            isEnrolling: false,
-            step: 0,
-            rfidUid: '',
-            name: '',
-            regNo: '',
-            course: ''
-          });
-        }
+
       } else {
         toast.error('Failed to communicate with scanner');
       }

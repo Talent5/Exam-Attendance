@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { studentAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -137,7 +137,7 @@ const Students = () => {
   });
 
   // Load students
-  const loadStudents = async (params = {}) => {
+  const loadStudents = useCallback(async (params = {}) => {
     try {
       setLoading(true);
       const response = await studentAPI.getStudents({
@@ -153,7 +153,7 @@ const Students = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   // Handle student form submission
   const handleStudentSubmit = async (formData) => {
@@ -222,7 +222,7 @@ const Students = () => {
     return () => {
       window.removeEventListener('student-enrolled', handleStudentEnrolled);
     };
-  }, []);
+  }, [loadStudents]);
 
   return (
     <div className="space-y-6">
