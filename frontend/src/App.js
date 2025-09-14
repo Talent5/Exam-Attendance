@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Users from './pages/Users';
+import Exams from './pages/Exams';
 import Attendance from './pages/Attendance';
 import Analytics from './pages/Analytics';
 import Scanner from './pages/Scanner';
@@ -70,6 +71,16 @@ function App() {
                 element={
                   <AdminRoute>
                     <Users />
+                  </AdminRoute>
+                } 
+              />
+              
+              {/* Exam Management - Admin only */}
+              <Route 
+                path="exams" 
+                element={
+                  <AdminRoute>
+                    <Exams />
                   </AdminRoute>
                 } 
               />

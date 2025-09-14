@@ -22,7 +22,7 @@ const registerSchema = Joi.object({
   role: Joi.string().valid('admin', 'invigilator').default('invigilator'),
   department: Joi.string().trim().max(100).optional(),
   employeeId: Joi.string().trim().max(20).optional(),
-  phone: Joi.string().pattern(/^[\+]?[1-9][\d]{0,15}$/).optional()
+  phone: Joi.string().pattern(/^[\+]?[0-9][\d]{0,15}$/).optional()
 });
 
 const changePasswordSchema = Joi.object({
@@ -65,7 +65,8 @@ const examSchema = Joi.object({
 // Attendance scan validation schema
 const scanSchema = Joi.object({
   rfidUid: Joi.string().trim().uppercase().required(),
-  timestamp: Joi.date().optional()
+  timestamp: Joi.date().optional(),
+  examId: Joi.string().trim().uppercase().optional()
 });
 
 // Query validation schemas
@@ -102,7 +103,7 @@ const createUserSchema = Joi.object({
   role: Joi.string().valid('admin', 'invigilator').required(),
   department: Joi.string().trim().min(2).max(100).required(),
   employeeId: Joi.string().trim().max(20).optional(),
-  phone: Joi.string().pattern(/^[\+]?[1-9][\d]{0,15}$/).optional()
+  phone: Joi.string().pattern(/^[\+]?[0-9][\d]{0,15}$/).optional()
 });
 
 const updateUserSchema = Joi.object({
@@ -113,7 +114,7 @@ const updateUserSchema = Joi.object({
   role: Joi.string().valid('admin', 'invigilator'),
   department: Joi.string().trim().min(2).max(100),
   employeeId: Joi.string().trim().max(20).allow(''),
-  phone: Joi.string().pattern(/^[\+]?[1-9][\d]{0,15}$/).allow(''),
+  phone: Joi.string().pattern(/^[\+]?[0-9][\d]{0,15}$/).allow(''),
   isActive: Joi.boolean()
 }).min(1);
 

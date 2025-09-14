@@ -14,11 +14,29 @@
    ```
 
 ### Step 2: Deploy to Render
+
+#### Option A: Using render.yaml (Recommended)
+The repository includes a `render.yaml` file that automatically configures the deployment:
+
+1. Go to [render.com](https://render.com) and sign up/login
+2. Click "New +" → "Blueprint"
+3. Connect your GitHub repository
+4. Render will automatically detect the `render.yaml` file
+5. The configuration will be applied automatically:
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Health Check**: `/health`
+   - **Auto Deploy**: Enabled
+
+#### Option B: Manual Configuration
+If you prefer manual setup:
+
 1. Go to [render.com](https://render.com) and sign up/login
 2. Click "New +" → "Web Service"
 3. Connect your GitHub repository
 4. Configure the service:
    - **Name**: `rfid-attendance-backend`
+   - **Root Directory**: `backend`
    - **Environment**: `Node`
    - **Build Command**: `npm install`
    - **Start Command**: `npm start`
@@ -182,6 +200,8 @@ Both Render and Vercel provide automatic HTTPS certificates. Your ESP32 will wor
 - **503 Service Unavailable**: Check if MongoDB is accessible
 - **Environment variables not loaded**: Verify all env vars are set
 - **Build failed**: Check Node.js version compatibility
+- **"Unknown command: build" error**: This happens when Render tries to run `npm build` instead of `npm run build`. Use the provided `render.yaml` file or ensure your build command is set to `npm install` in manual configuration
+- **Wrong directory**: Make sure the root directory is set to `backend` if deploying from the root of the repository
 
 ### Common Frontend Issues
 - **API calls fail**: Check CORS configuration and API URL

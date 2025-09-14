@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import scannerService from '../../services/scanner';
 
-const RFIDScanner = () => {
+const RFIDScanner = ({ selectedExam }) => {
   const [scannerStatus, setScannerStatus] = useState({
     connected: false,
     mode: 'ATTENDANCE',

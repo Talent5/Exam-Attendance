@@ -6,7 +6,7 @@ const Student = require('../models/Student');
 const Attendance = require('../models/Attendance');
 const { scanSchema, attendanceQuerySchema } = require('../validators/schemas');
 
-// POST /api/attendance/scan - Record attendance scan from ESP32
+// POST /api/attendance/scan - Record attendance scan from ESP32 (Exam-specific)
 router.post('/scan', async (req, res) => {
   try {
     const { error, value } = scanSchema.validate(req.body);
@@ -18,7 +18,7 @@ router.post('/scan', async (req, res) => {
       });
     }
 
-    const { rfidUid, timestamp } = value;
+    const { rfidUid, timestamp, examId } = value;
     const scanTime = timestamp ? new Date(timestamp) : new Date();
 
     // Find student by RFID UID
@@ -32,31 +32,126 @@ router.post('/scan', async (req, res) => {
       req.io.to('dashboard').emit('unknown-card-scan', {
         rfidUid,
         timestamp: scanTime,
+        examId,
         message: 'Unknown RFID card detected'
       });
 
       return res.status(404).json({
         success: false,
         message: 'Unknown RFID card. Please enroll the student first.',
-        data: { rfidUid, timestamp: scanTime }
+        data: { rfidUid, timestamp: scanTime, examId }
       });
     }
 
-    // Check if already scanned today
+    // If examId is provided, find the specific exam and check enrollment
+    let currentExam = null;
+    if (examId) {
+      const Exam = require('../models/Exam');
+      currentExam = await Exam.findOne({ 
+        examId: examId, 
+        isActive: true,
+        status: { $in: ['Scheduled', 'In Progress'] }
+      });
+
+      if (!currentExam) {
+        return res.status(404).json({
+          success: false,
+          message: 'Exam not found or not active',
+          data: { examId, rfidUid, timestamp: scanTime }
+        });
+      }
+
+      // Check if student is enrolled in this exam
+      const isEnrolled = currentExam.enrolledStudents.some(
+        enrollment => enrollment.studentId.toString() === student._id.toString()
+      );
+
+      if (!isEnrolled) {
+        // Log unauthorized scan attempt
+        console.log(`Student ${student.name} (${student.regNo}) not enrolled in exam ${examId}`);
+        
+        // Emit real-time update for unauthorized scan
+        req.io.to('dashboard').emit('unauthorized-scan', {
+          student: {
+            name: student.name,
+            regNo: student.regNo,
+            course: student.course
+          },
+          examId,
+          timestamp: scanTime,
+          message: 'Student not enrolled in this exam'
+        });
+
+        return res.status(403).json({
+          success: false,
+          message: `Student ${student.name} is not enrolled in exam ${examId}`,
+          data: { 
+            student: { name: student.name, regNo: student.regNo, course: student.course },
+            examId, 
+            timestamp: scanTime 
+          }
+        });
+      }
+
+      // Check if exam is within the allowed time window
+      const examDate = new Date(currentExam.examDate);
+      const [startHour, startMin] = currentExam.startTime.split(':');
+      const [endHour, endMin] = currentExam.endTime.split(':');
+      
+      const examStartTime = new Date(examDate);
+      examStartTime.setHours(parseInt(startHour), parseInt(startMin), 0, 0);
+      
+      const examEndTime = new Date(examDate);
+      examEndTime.setHours(parseInt(endHour), parseInt(endMin), 0, 0);
+
+      // Allow scanning from grace period before start time
+      const gracePeriod = currentExam.attendanceSettings?.lateEntryGracePeriod || 15;
+      const allowedStartTime = new Date(examStartTime.getTime() - gracePeriod * 60000);
+
+      if (scanTime < allowedStartTime) {
+        return res.status(400).json({
+          success: false,
+          message: `Scanning not allowed yet. Exam starts at ${currentExam.startTime}`,
+          data: { examId, examStartTime: currentExam.startTime, currentTime: scanTime }
+        });
+      }
+
+      if (scanTime > examEndTime && !currentExam.attendanceSettings?.requireExitScan) {
+        return res.status(400).json({
+          success: false,
+          message: `Exam has ended. Scanning closed at ${currentExam.endTime}`,
+          data: { examId, examEndTime: currentExam.endTime, currentTime: scanTime }
+        });
+      }
+    }
+
+    // Check if already scanned for this exam today
     const today = scanTime.toISOString().split('T')[0];
-    const existingAttendance = await Attendance.findOne({
+    const attendanceFilter = {
       studentId: student._id,
       date: today
-    });
+    };
+    
+    // If exam-specific, check for that exam, otherwise general attendance
+    if (currentExam) {
+      attendanceFilter.examId = currentExam._id;
+    }
+
+    const existingAttendance = await Attendance.findOne(attendanceFilter);
 
     if (existingAttendance) {
       // Update existing attendance with latest scan time
       existingAttendance.timestamp = scanTime;
       existingAttendance.time = scanTime.toTimeString().split(' ')[0];
+      if (currentExam && currentExam.attendanceSettings?.requireExitScan) {
+        existingAttendance.exitTime = scanTime.toTimeString().split(' ')[0];
+        existingAttendance.status = 'completed';
+      }
       await existingAttendance.save();
 
       const populatedAttendance = await Attendance.findById(existingAttendance._id)
-        .populate('studentId', 'name regNo course');
+        .populate('studentId', 'name regNo course')
+        .populate('examId', 'examName examId subject');
 
       // Clear stats cache since attendance data changed
       statsCache.clear();
@@ -64,12 +159,16 @@ router.post('/scan', async (req, res) => {
       // Emit real-time update
       req.io.to('dashboard').emit('attendance-updated', {
         attendance: populatedAttendance,
-        message: `${student.name} scanned again today`
+        message: currentExam?.attendanceSettings?.requireExitScan ? 
+          `${student.name} exited exam ${currentExam.examId}` :
+          `${student.name} scanned again for ${currentExam?.examId || 'general attendance'}`
       });
 
       return res.json({
         success: true,
-        message: 'Attendance updated - student already scanned today',
+        message: currentExam?.attendanceSettings?.requireExitScan ?
+          'Exit scan recorded successfully' :
+          'Attendance updated - student already scanned today',
         data: populatedAttendance
       });
     }
@@ -81,14 +180,34 @@ router.post('/scan', async (req, res) => {
       timestamp: scanTime,
       date: today,
       time: scanTime.toTimeString().split(' ')[0],
-      dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][scanTime.getDay()]
+      dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][scanTime.getDay()],
+      status: 'present'
     };
+
+    // Add exam reference if scanning for specific exam
+    if (currentExam) {
+      attendanceData.examId = currentExam._id;
+      attendanceData.examInfo = {
+        examId: currentExam.examId,
+        examName: currentExam.examName,
+        subject: currentExam.subject
+      };
+
+      // Find seat number if assigned
+      const enrollment = currentExam.enrolledStudents.find(
+        e => e.studentId.toString() === student._id.toString()
+      );
+      if (enrollment?.seatNumber) {
+        attendanceData.seatNumber = enrollment.seatNumber;
+      }
+    }
 
     const attendance = new Attendance(attendanceData);
     await attendance.save();
 
     const populatedAttendance = await Attendance.findById(attendance._id)
-      .populate('studentId', 'name regNo course');
+      .populate('studentId', 'name regNo course')
+      .populate('examId', 'examName examId subject');
 
     // Clear stats cache since attendance data changed
     statsCache.clear();
@@ -96,12 +215,16 @@ router.post('/scan', async (req, res) => {
     // Emit real-time update
     req.io.to('dashboard').emit('new-attendance', {
       attendance: populatedAttendance,
-      message: `${student.name} marked present`
+      message: currentExam ? 
+        `${student.name} marked present for exam ${currentExam.examId}` :
+        `${student.name} marked present`
     });
 
     res.status(201).json({
       success: true,
-      message: 'Attendance recorded successfully',
+      message: currentExam ? 
+        `Attendance recorded for exam ${currentExam.examId}` :
+        'Attendance recorded successfully',
       data: populatedAttendance
     });
   } catch (error) {
