@@ -12,7 +12,7 @@ const char* password = "YOUR_WIFI_PASSWORD"; // Replace with your WiFi password
 // Backend API configuration - UPDATED TO MATCH YOUR COMPUTER'S IP
 // For development: Your computer's IP address
 // For production: https://your-backend-app.onrender.com
-const char* baseURL = "http://192.168.0.49:5000";
+const char* baseURL = "https://exam-attendance-59tw.onrender.com;
 const char* attendanceEndpoint = "/api/attendance/scan";
 const char* enrollmentEndpoint = "/api/students";
 
