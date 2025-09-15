@@ -102,32 +102,25 @@ app.use('/api/users', require('./routes/users'));
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-  
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    // Client disconnected
   });
   
   // Join dashboard room for real-time updates
   socket.on('join-dashboard', () => {
     socket.join('dashboard');
-    console.log('Client joined dashboard room:', socket.id);
   });
 });
 
 // Scanner WebSocket namespace for RFID scanner communication
 const scannerNamespace = io.of('/scanner');
 scannerNamespace.on('connection', (socket) => {
-  console.log('Scanner client connected:', socket.id);
-  
   socket.on('disconnect', () => {
-    console.log('Scanner client disconnected:', socket.id);
+    // Scanner client disconnected
   });
   
   // Scanner command handling
   socket.on('scanner-command', (data) => {
-    console.log('Scanner command received:', data);
-    
     // Broadcast command to all connected scanners (ESP32 devices)
     scannerNamespace.emit('command', data);
     
@@ -141,16 +134,12 @@ scannerNamespace.on('connection', (socket) => {
   
   // Handle ESP32 scanner status updates
   socket.on('scanner-status', (data) => {
-    console.log('Scanner status update:', data);
-    
     // Broadcast status to web clients
     scannerNamespace.emit('status-update', data);
   });
   
   // Handle ESP32 scan events
   socket.on('scan-event', (data) => {
-    console.log('Scan event from ESP32:', data);
-    
     // Broadcast scan event to web clients
     scannerNamespace.emit('scan-result', data);
     
@@ -160,8 +149,6 @@ scannerNamespace.on('connection', (socket) => {
   
   // Handle mode changes
   socket.on('mode-change', (data) => {
-    console.log('Scanner mode change:', data);
-    
     // Broadcast mode change to all clients
     scannerNamespace.emit('mode-changed', data);
   });

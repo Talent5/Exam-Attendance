@@ -9,6 +9,7 @@ const Login = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,42 +31,55 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
+    
+    // Clear errors when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!credentials.username.trim()) {
+      newErrors.username = 'Username or email is required';
+    }
+    
+    if (!credentials.password) {
+      newErrors.password = 'Password is required';
+    } else if (credentials.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!credentials.username || !credentials.password) {
+    if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
+    setErrors({});
 
     try {
       const result = await login(credentials);
       
       if (result.success) {
-        // Navigation will be handled by the useEffect that watches isAuthenticated
         navigate(from, { replace: true });
+      } else {
+        setErrors({ form: result.message || 'Login failed. Please check your credentials.' });
       }
     } catch (error) {
-      console.error('Login error:', error);
+      setErrors({ form: 'Connection error. Please try again.' });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = (role) => {
-    if (role === 'admin') {
-      setCredentials({
-        username: 'admin',
-        password: 'admin123'
-      });
-    } else {
-      setCredentials({
-        username: 'invigilator',
-        password: 'demo123'
-      });
     }
   };
 
@@ -83,13 +97,25 @@ const Login = () => {
             Exam Attendance System
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to your account to continue
+            Please sign in to access the system
           </p>
         </div>
 
         {/* Login Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           <div className="bg-white rounded-lg shadow-lg p-8">
+            {/* Form Error Message */}
+            {errors.form && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-red-600">{errors.form}</p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
               {/* Username Field */}
               <div>
@@ -107,12 +133,20 @@ const Login = () => {
                     name="username"
                     type="text"
                     required
+                    autoComplete="username"
+                    autoFocus
                     value={credentials.username}
                     onChange={handleInputChange}
-                    className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className={`appearance-none relative block w-full pl-10 pr-3 py-3 border ${
+                      errors.username ? 'border-red-300' : 'border-gray-300'
+                    } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                     placeholder="Enter your username or email"
+                    aria-describedby={errors.username ? 'username-error' : undefined}
                   />
                 </div>
+                {errors.username && (
+                  <p id="username-error" className="mt-1 text-sm text-red-600" role="alert">{errors.username}</p>
+                )}
               </div>
 
               {/* Password Field */}
@@ -131,15 +165,21 @@ const Login = () => {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
+                    autoComplete="current-password"
                     value={credentials.password}
                     onChange={handleInputChange}
-                    className="appearance-none relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className={`appearance-none relative block w-full pl-10 pr-10 py-3 border ${
+                      errors.password ? 'border-red-300' : 'border-gray-300'
+                    } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                     placeholder="Enter your password"
+                    aria-describedby={errors.password ? 'password-error' : undefined}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    tabIndex={-1}
                   >
                     {showPassword ? (
                       <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,6 +193,9 @@ const Login = () => {
                     )}
                   </button>
                 </div>
+                {errors.password && (
+                  <p id="password-error" className="mt-1 text-sm text-red-600" role="alert">{errors.password}</p>
+                )}
               </div>
             </div>
 
@@ -160,7 +203,7 @@ const Login = () => {
             <div className="mt-6">
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !credentials.username.trim() || !credentials.password}
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 {isLoading ? (
@@ -181,52 +224,30 @@ const Login = () => {
                 )}
               </button>
             </div>
+
+            {/* Forgot Password Link */}
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
+                onClick={() => {
+                  // TODO: Implement forgot password functionality
+                  window.alert('For password reset assistance, please contact your system administrator.');
+                }}
+              >
+                Forgot your password?
+              </button>
+            </div>
           </div>
         </form>
 
-        {/* Demo Credentials */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">Demo Accounts</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={() => handleDemoLogin('admin')}
-              className="p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <h4 className="font-semibold text-gray-900">Administrator</h4>
-                <p className="text-sm text-gray-600">Full system access</p>
-                <p className="text-xs text-gray-500 mt-1">admin / admin123</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleDemoLogin('invigilator')}
-              className="p-4 border-2 border-green-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-all duration-200"
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </div>
-                <h4 className="font-semibold text-gray-900">Invigilator</h4>
-                <p className="text-sm text-gray-600">Monitor exams</p>
-                <p className="text-xs text-gray-500 mt-1">invigilator / demo123</p>
-              </div>
-            </button>
-          </div>
-        </div>
-
         {/* Footer */}
-        <div className="text-center">
+        <div className="text-center space-y-2">
           <p className="text-sm text-gray-600">
             Secure exam attendance management system
+          </p>
+          <p className="text-xs text-gray-500">
+            © 2025 Exam Attendance System. All rights reserved.
           </p>
         </div>
       </div>

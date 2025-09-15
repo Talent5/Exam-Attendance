@@ -1,0 +1,118 @@
+# =======================
+# Backend Specific
+# =======================
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+
+# =======================
+# Node.js
+# =======================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =======================
+# Logs & Monitoring
+# =======================
+logs/
+*.log
+access.log
+error.log
+combined.log
+server.log
+
+# PM2 logs
+pm2.log
+pm2-error.log
+
+# =======================
+# Database
+# =======================
+*.db
+*.sqlite
+*.sqlite3
+
+# MongoDB dumps
+mongo-dumps/
+db-backups/
+
+# =======================
+# File Uploads
+# =======================
+uploads/
+temp-uploads/
+files/
+attachments/
+images/
+documents/
+
+# =======================
+# Cache & Sessions
+# =======================
+.cache/
+sessions/
+redis-dump.rdb
+
+# =======================
+# Security & Keys
+# =======================
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+ssl/
+
+# JWT secrets
+jwt-secret.txt
+private-key.pem
+public-key.pem
+
+# API keys and secrets
+secrets.json
+api-keys.json
+credentials.json
+service-account.json
+
+# =======================
+# Development Tools
+# =======================
+# Test coverage
+coverage/
+.nyc_output/
+
+# Debug files
+debug.log
+.debug
+
+# =======================
+# Deployment
+# =======================
+.deployment
+deploy.sh
+Dockerfile.prod
+
+# =======================
+# Backup Files
+# =======================
+*.backup
+*.bak
+*.old
+
+# Database exports
+*.sql
+*.dump
+
+# =======================
+# System Files
+# =======================
+.DS_Store
+Thumbs.db

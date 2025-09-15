@@ -217,10 +217,14 @@ userSchema.statics.createDefaultAdmin = async function() {
     const adminExists = await this.findOne({ role: 'admin' });
     
     if (!adminExists) {
+      // Generate a random password for production security
+      const crypto = require('crypto');
+      const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || crypto.randomBytes(12).toString('hex');
+      
       const defaultAdmin = new this({
         username: 'admin',
-        email: 'admin@examattendance.com',
-        password: 'admin123',
+        email: process.env.ADMIN_EMAIL || 'admin@examattendance.com',
+        password: defaultPassword,
         fullName: 'System Administrator',
         role: 'admin',
         department: 'IT',
@@ -229,17 +233,20 @@ userSchema.statics.createDefaultAdmin = async function() {
       });
       
       await defaultAdmin.save();
-      console.log('✅ Default admin user created');
-      console.log('Username: admin');
-      console.log('Password: admin123');
-      console.log('⚠️  Please change the default password after first login');
+      
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Default admin user created');
+        console.log('Username: admin');
+        console.log(`Password: ${defaultPassword}`);
+        console.log('⚠️  Please change the default password after first login');
+      }
       
       return defaultAdmin;
     }
     
     return adminExists;
   } catch (error) {
-    console.error('Error creating default admin:', error);
     throw error;
   }
 };

@@ -1,0 +1,47 @@
+# =======================
+# Arduino/ESP32 Specific
+# =======================
+
+# Arduino IDE
+*.elf
+*.hex
+*.bin
+*.map
+
+# ESP32 build files
+build/
+*.o
+*.a
+*.so
+
+# Libraries (if locally installed)
+libraries/
+
+# =======================
+# PlatformIO
+# =======================
+.pio/
+.pioenvs/
+.piolibdeps/
+lib/
+libdeps/
+
+# =======================
+# VS Code Arduino
+# =======================
+.vscode/arduino.json
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+
+# =======================
+# Temporary Files
+# =======================
+*.tmp
+*.temp
+*~
+
+# =======================
+# System Files
+# =======================
+.DS_Store
+Thumbs.db

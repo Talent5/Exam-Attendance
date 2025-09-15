@@ -116,7 +116,7 @@ export const AuthProvider = ({ children }) => {
           dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
         }
       } catch (error) {
-        console.error('Error loading user from storage:', error);
+        // Clear invalid data from storage
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
@@ -147,8 +147,7 @@ export const AuthProvider = ({ children }) => {
           logout();
         }
       } catch (error) {
-        console.error('Token verification failed:', error);
-        // Don't logout on network errors, just log the error
+        // Don't logout on network errors to maintain user session
       }
     };
 
@@ -209,7 +208,7 @@ export const AuthProvider = ({ children }) => {
         credentials: 'include'
       });
     } catch (error) {
-      console.error('Logout API call failed:', error);
+      // Silent failure for logout API call
     }
 
     // Clear localStorage
@@ -295,7 +294,6 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: data.message };
       }
     } catch (error) {
-      console.error('Get current user error:', error);
       return { success: false, message: 'Connection error' };
     }
   };
