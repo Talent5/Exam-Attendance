@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const moment = require('moment');
+const moment = require('moment-timezone');
 const { Parser } = require('json2csv');
 const Student = require('../models/Student');
 const Attendance = require('../models/Attendance');
@@ -19,7 +19,10 @@ router.post('/scan', async (req, res) => {
     }
 
     const { rfidUid, timestamp, examId } = value;
-    const scanTime = timestamp ? new Date(timestamp) : new Date();
+    // Convert timestamp to CAT timezone if provided, otherwise use current CAT time
+    const scanTime = timestamp ? 
+      moment.tz(timestamp, 'Africa/Harare').toDate() : 
+      moment.tz('Africa/Harare').toDate();
 
     // Find student by RFID UID
     const student = await Student.findOne({ rfidUid });
@@ -126,7 +129,7 @@ router.post('/scan', async (req, res) => {
     }
 
     // Check if already scanned for this exam today
-    const today = scanTime.toISOString().split('T')[0];
+    const today = moment.tz(scanTime, 'Africa/Harare').format('YYYY-MM-DD');
     const attendanceFilter = {
       studentId: student._id,
       date: today
@@ -142,9 +145,9 @@ router.post('/scan', async (req, res) => {
     if (existingAttendance) {
       // Update existing attendance with latest scan time
       existingAttendance.timestamp = scanTime;
-      existingAttendance.time = scanTime.toTimeString().split(' ')[0];
+      existingAttendance.time = moment.tz(scanTime, 'Africa/Harare').format('HH:mm:ss');
       if (currentExam && currentExam.attendanceSettings?.requireExitScan) {
-        existingAttendance.exitTime = scanTime.toTimeString().split(' ')[0];
+        existingAttendance.exitTime = moment.tz(scanTime, 'Africa/Harare').format('HH:mm:ss');
         existingAttendance.status = 'completed';
       }
       await existingAttendance.save();
@@ -174,13 +177,14 @@ router.post('/scan', async (req, res) => {
     }
 
     // Create new attendance record
+    const catMoment = moment.tz(scanTime, 'Africa/Harare');
     const attendanceData = {
       studentId: student._id,
       rfidUid,
       timestamp: scanTime,
-      date: today,
-      time: scanTime.toTimeString().split(' ')[0],
-      dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][scanTime.getDay()],
+      date: catMoment.format('YYYY-MM-DD'),
+      time: catMoment.format('HH:mm:ss'),
+      dayOfWeek: catMoment.format('dddd'),
       status: 'present'
     };
 
@@ -391,7 +395,7 @@ router.get('/export', async (req, res) => {
     const csv = parser.parse(attendanceData);
 
     // Set response headers for file download
-    const filename = `attendance_export_${moment().format('YYYY-MM-DD_HH-mm-ss')}.csv`;
+    const filename = `attendance_export_${moment.tz('Africa/Harare').format('YYYY-MM-DD_HH-mm-ss')}.csv`;
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
@@ -440,9 +444,9 @@ router.get('/stats', async (req, res) => {
       });
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const thisWeekStart = moment().startOf('week').toDate();
-    const thisWeekEnd = moment().endOf('week').toDate();
+    const today = moment.tz('Africa/Harare').format('YYYY-MM-DD');
+    const thisWeekStart = moment.tz('Africa/Harare').startOf('week').toDate();
+    const thisWeekEnd = moment.tz('Africa/Harare').endOf('week').toDate();
 
     // Use Promise.all for parallel execution
     const [todayAttendance, weekAttendance, totalAttendance] = await Promise.all([
@@ -488,7 +492,7 @@ router.get('/stats', async (req, res) => {
         {
           $match: {
             date: {
-              $gte: moment().subtract(6, 'days').format('YYYY-MM-DD'),
+              $gte: moment.tz('Africa/Harare').subtract(6, 'days').format('YYYY-MM-DD'),
               $lte: today
             }
           }
@@ -537,7 +541,7 @@ router.get('/stats', async (req, res) => {
     // Transform last 7 days data to include missing dates
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
-      const date = moment().subtract(i, 'days');
+      const date = moment.tz('Africa/Harare').subtract(i, 'days');
       const dateStr = date.format('YYYY-MM-DD');
       const dayData = last7DaysData.find(d => d._id === dateStr);
       last7Days.push({

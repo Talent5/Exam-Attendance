@@ -74,10 +74,10 @@ struct EnrollmentData {
 
 EnrollmentData enrollmentBuffer;
 
-// Time configuration
+// Time configuration for CAT (Central Africa Time - UTC+2)
 const char* ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 0;      // Adjust for your timezone (0 for UTC)
-const int daylightOffset_sec = 0;  // Adjust for daylight saving time
+const long gmtOffset_sec = 2 * 3600;  // CAT is UTC+2 (2 hours * 3600 seconds)
+const int daylightOffset_sec = 0;     // CAT doesn't observe daylight saving time
 
 void setup() {
   Serial.begin(115200);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import scannerService from '../../services/scanner';
+import { formatTimeCAT } from '../../utils/timezone';
 
 const RFIDScanner = ({ selectedExam }) => {
   const [scannerStatus, setScannerStatus] = useState({
@@ -188,7 +189,7 @@ const RFIDScanner = ({ selectedExam }) => {
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">
-              {scannerStatus.lastScan ? new Date(scannerStatus.lastScan).toLocaleTimeString() : 'None'}
+              {scannerStatus.lastScan ? formatTimeCAT(scannerStatus.lastScan) : 'None'}
             </div>
             <div className="text-sm text-gray-600">Last Scan</div>
           </div>

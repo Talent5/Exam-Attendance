@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { formatTimeCAT } from '../../utils/timezone';
 
 const ScannerWidget = () => {
   const [scannerStatus, setScannerStatus] = useState({
@@ -105,7 +106,7 @@ const ScannerWidget = () => {
       {scannerStatus.lastScan && (
         <div className="mt-3 pt-3 border-t border-gray-200">
           <div className="text-xs text-gray-500">
-            Last scan: {new Date(scannerStatus.lastScan).toLocaleTimeString()}
+            Last scan: {formatTimeCAT(scannerStatus.lastScan)}
           </div>
         </div>
       )}

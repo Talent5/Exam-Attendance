@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const moment = require('moment-timezone');
 const { Schema } = mongoose;
 
 const attendanceSchema = new Schema({
@@ -22,22 +23,24 @@ const attendanceSchema = new Schema({
   timestamp: {
     type: Date,
     required: true,
-    default: Date.now
+    default: function() {
+      return moment.tz('Africa/Harare').toDate();
+    }
   },
   date: {
     type: String,
     required: true,
-    // Format: YYYY-MM-DD
+    // Format: YYYY-MM-DD in CAT
     default: function() {
-      return new Date().toISOString().split('T')[0];
+      return moment.tz('Africa/Harare').format('YYYY-MM-DD');
     }
   },
   time: {
     type: String,
     required: true,
-    // Format: HH:MM:SS
+    // Format: HH:MM:SS in CAT
     default: function() {
-      return new Date().toTimeString().split(' ')[0];
+      return moment.tz('Africa/Harare').format('HH:mm:ss');
     }
   },
   dayOfWeek: {
@@ -45,8 +48,7 @@ const attendanceSchema = new Schema({
     required: true,
     enum: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
     default: function() {
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      return days[new Date().getDay()];
+      return moment.tz('Africa/Harare').format('dddd');
     }
   },
   status: {

@@ -7,6 +7,9 @@ const socketIo = require('socket.io');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
+// Set timezone to CAT for consistent time handling
+process.env.TZ = 'Africa/Harare';
+
 const connectDB = require('./config/database');
 const { optionalAuth } = require('./middleware/auth');
 const User = require('./models/User');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { attendanceAPI, downloadFile } from '../services/api';
-import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { formatDateCAT } from '../utils/timezone';
 
 const Attendance = () => {
   const [attendance, setAttendance] = useState([]);
@@ -240,7 +240,7 @@ const Attendance = () => {
                         {record.student?.course || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {format(new Date(record.timestamp), 'MMM dd, yyyy')}
+                        {formatDateCAT(record.timestamp, 'long')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {record.time}
