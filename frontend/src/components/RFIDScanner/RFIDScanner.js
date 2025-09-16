@@ -90,15 +90,32 @@ const RFIDScanner = ({ selectedExam }) => {
 
   const handleModeSwitch = async (mode) => {
     try {
-      const success = scannerService.switchMode(mode);
+      let success = false;
+      
+      switch (mode) {
+        case 'ENTRY':
+          success = scannerService.setEntryMode();
+          break;
+        case 'EXIT':
+          success = scannerService.setExitMode();
+          break;
+        case 'ENROLLMENT':
+          success = scannerService.setEnrollmentMode();
+          break;
+        default:
+          success = scannerService.switchMode(mode);
+          break;
+      }
+      
       if (success) {
         toast.success(`Switching scanner to ${mode} mode...`);
-        
-
+        // Update local state immediately for better UX
+        setScannerStatus(prev => ({ ...prev, mode }));
       } else {
         toast.error('Failed to communicate with scanner');
       }
     } catch (error) {
+      console.error('Failed to switch scanner mode:', error);
       toast.error('Failed to switch scanner mode');
     }
   };

@@ -11,6 +11,9 @@ class ScannerService {
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
     this.listeners = {};
+    
+    // Auto-connect when service is created
+    this.connect();
   }
 
   // Connect to Backend Socket.IO scanner namespace
@@ -74,10 +77,11 @@ class ScannerService {
     try {
       const message = {
         command,
-        data,
+        ...data, // Spread data directly into the message
         timestamp: Date.now()
       };
       this.socket.emit('scanner-command', message);
+      console.log('Sent scanner command:', message);
       return true;
     } catch (error) {
       console.error('Error sending scanner command:', error);
@@ -90,24 +94,31 @@ class ScannerService {
     return this.sendCommand('switch_mode', { mode });
   }
 
-  setAttendanceMode() {
-    return this.sendCommand('set_mode', { mode: 'ATTENDANCE' });
+  setEntryMode() {
+    console.log('Setting ENTRY mode...');
+    return this.sendCommand('SET_MODE', { mode: 'ENTRY' });
+  }
+
+  setExitMode() {
+    console.log('Setting EXIT mode...');
+    return this.sendCommand('SET_MODE', { mode: 'EXIT' });
   }
 
   setEnrollmentMode() {
-    return this.sendCommand('set_mode', { mode: 'ENROLLMENT' });
+    console.log('Setting ENROLLMENT mode...');
+    return this.sendCommand('SET_MODE', { mode: 'ENROLLMENT' });
   }
 
   resetScanner() {
-    return this.sendCommand('reset');
+    return this.sendCommand('RESET');
   }
 
   testScanner() {
-    return this.sendCommand('test');
+    return this.sendCommand('TEST');
   }
 
   getStatus() {
-    return this.sendCommand('status');
+    return this.sendCommand('STATUS');
   }
 
   cancelEnrollment() {
@@ -173,7 +184,7 @@ class ScannerService {
     setInterval(() => {
       this.emit('status', {
         connected: true,
-        mode: Math.random() > 0.5 ? 'ATTENDANCE' : 'ENROLLMENT',
+        mode: ['ENTRY', 'EXIT', 'ENROLLMENT'][Math.floor(Math.random() * 3)],
         uptime: Date.now(),
         consecutiveFailures: Math.floor(Math.random() * 3),
         freeHeap: 150000 + Math.floor(Math.random() * 50000)
@@ -186,7 +197,7 @@ class ScannerService {
         this.emit('scan', {
           uid: 'SIM' + Math.random().toString(36).substr(2, 8).toUpperCase(),
           timestamp: Date.now(),
-          mode: Math.random() > 0.5 ? 'ATTENDANCE' : 'ENROLLMENT'
+          mode: ['ENTRY', 'EXIT', 'ENROLLMENT'][Math.floor(Math.random() * 3)]
         });
       }
     }, 5000);

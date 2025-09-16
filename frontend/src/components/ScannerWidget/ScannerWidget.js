@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import scannerService from '../../services/scanner';
 import { formatTimeCAT } from '../../utils/timezone';
 
 const ScannerWidget = () => {
@@ -25,9 +26,19 @@ const ScannerWidget = () => {
 
   const handleQuickModeSwitch = async (mode) => {
     try {
+      // Call the appropriate scanner service method
+      if (mode === 'ENTRY') {
+        await scannerService.setEntryMode();
+      } else if (mode === 'EXIT') {
+        await scannerService.setExitMode();
+      } else if (mode === 'ENROLLMENT') {
+        await scannerService.setEnrollmentMode();
+      }
+      
       setScannerStatus(prev => ({ ...prev, mode }));
       toast.success(`Scanner switched to ${mode} mode`);
     } catch (error) {
+      console.error('Failed to switch scanner mode:', error);
       toast.error('Failed to switch scanner mode');
     }
   };
