@@ -27,6 +27,7 @@ const Exams = () => {
     examDate: '',
     startTime: '',
     endTime: '',
+    duration: '',
     venue: {
       room: '',
       building: '',
@@ -66,7 +67,24 @@ const Exams = () => {
   const handleCreateExam = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/api/exams', formData);
+      // Convert numeric fields to numbers and handle empty values
+      const examData = {
+        ...formData,
+        duration: Number(formData.duration),
+        venue: {
+          ...formData.venue,
+          capacity: formData.venue.capacity ? Number(formData.venue.capacity) : undefined
+        },
+        totalMarks: formData.totalMarks ? Number(formData.totalMarks) : undefined,
+        passingMarks: formData.passingMarks ? Number(formData.passingMarks) : undefined,
+        attendanceSettings: {
+          ...formData.attendanceSettings,
+          lateEntryGracePeriod: Number(formData.attendanceSettings.lateEntryGracePeriod),
+          absentMarkingTime: Number(formData.attendanceSettings.absentMarkingTime)
+        }
+      };
+
+      await api.post('/api/exams', examData);
       toast.success('Exam created successfully');
       setShowCreateModal(false);
       setFormData({
@@ -80,6 +98,7 @@ const Exams = () => {
         examDate: '',
         startTime: '',
         endTime: '',
+        duration: '',
         venue: {
           room: '',
           building: '',
@@ -490,6 +509,20 @@ const Exams = () => {
                   </div>
                   
                   <div>
+                    <label className="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                    <input
+                      type="number"
+                      name="duration"
+                      value={formData.duration}
+                      onChange={handleInputChange}
+                      min="15"
+                      max="480"
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
                     <label className="block text-sm font-medium text-gray-700">Room</label>
                     <input
                       type="text"
@@ -508,6 +541,55 @@ const Exams = () => {
                       name="venue.building"
                       value={formData.venue.building}
                       onChange={handleInputChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Capacity</label>
+                    <input
+                      type="number"
+                      name="venue.capacity"
+                      value={formData.venue.capacity}
+                      onChange={handleInputChange}
+                      min="1"
+                      max="1000"
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Floor</label>
+                    <input
+                      type="text"
+                      name="venue.floor"
+                      value={formData.venue.floor}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Total Marks</label>
+                    <input
+                      type="number"
+                      name="totalMarks"
+                      value={formData.totalMarks}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="1000"
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Passing Marks</label>
+                    <input
+                      type="number"
+                      name="passingMarks"
+                      value={formData.passingMarks}
+                      onChange={handleInputChange}
+                      min="0"
                       className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
