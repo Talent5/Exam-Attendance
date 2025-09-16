@@ -80,6 +80,32 @@ const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 2 * 3600;  // CAT is UTC+2 (2 hours * 3600 seconds)
 const int daylightOffset_sec = 0;     // CAT doesn't observe daylight saving time
 
+// Function prototypes (declare all functions)
+void connectToWiFi();
+bool sendAttendanceData(String uid, String entryType = "entry");
+void blinkLED(int pin, int times);
+String getTimestamp();
+void printSystemStatus();
+void playTone(int frequency, int duration);
+void playSuccessSound();
+void playErrorSound();
+void playStartupSound();
+void resetSystem();
+bool checkRFIDHealth();
+void testSystem();
+void switchMode();
+void setMode(ScanMode newMode);
+void displayCurrentMode();
+void playModeSound();
+void clearEnrollmentBuffer();
+bool handleEnrollmentScan(String uid);
+void promptForEnrollmentData();
+void handleEnrollmentInput(String input);
+void displayEnrollmentSummary();
+void submitEnrollment();
+void cancelEnrollment();
+bool sendEnrollmentData();
+
 void setup() {
   Serial.begin(115200);
   Serial.println("\n=== ESP32 RFID Attendance System ===");
@@ -319,7 +345,7 @@ void connectToWiFi() {
   }
 }
 
-bool sendAttendanceData(String uid, String entryType = "entry") {
+bool sendAttendanceData(String uid, String entryType) {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi not connected. Cannot send data.");
     return false;
@@ -612,7 +638,7 @@ void displayCurrentMode() {
   Serial.println("╚════════════════════════════════╝");
   
   if (currentMode == ENTRY_MODE) {
-    Serial.println("� Ready to scan cards for student entry");
+    Serial.println("🟢 Ready to scan cards for student entry");
     Serial.println("   Scan any enrolled student card to record entry");
   } else if (currentMode == EXIT_MODE) {
     Serial.println("🔴 Ready to scan cards for student exit");
@@ -742,31 +768,6 @@ void displayEnrollmentSummary() {
   Serial.println("════════════════════════════════");
   Serial.println("✅ Confirm enrollment? (yes/no):");
   Serial.print("🤔 Confirm: ");
-}
-
-void submitEnrollment() {
-  Serial.println("\n📤 Submitting enrollment data...");
-  
-  if (sendEnrollmentData()) {
-    Serial.println("🎉 STUDENT ENROLLED SUCCESSFULLY!");
-    Serial.printf("Welcome %s to the system!\n", enrollmentBuffer.name.c_str());
-    playSuccessSound();
-    blinkLED(LED_SUCCESS, 5);
-  } else {
-    Serial.println("❌ ENROLLMENT FAILED!");
-    Serial.println("Please check your data and try again.");
-    playErrorSound();
-    blinkLED(LED_ERROR, 3);
-  }
-  
-  clearEnrollmentBuffer();
-  Serial.println("\n🔄 Ready for next enrollment...");
-}
-
-void cancelEnrollment() {
-  Serial.println("❌ Enrollment cancelled.");
-  clearEnrollmentBuffer();
-  playTone(400, 300);
 }
 
 void submitEnrollment() {
