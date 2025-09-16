@@ -102,6 +102,7 @@ app.use('/api/students', studentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/users', require('./routes/users'));
+app.use('/api/scanner', require('./routes/scanner'));
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

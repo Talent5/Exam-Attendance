@@ -96,17 +96,48 @@ class ScannerService {
 
   setEntryMode() {
     console.log('Setting ENTRY mode...');
-    return this.sendCommand('SET_MODE', { mode: 'ENTRY' });
+    return this.sendHttpCommand('SET_MODE', 'ENTRY');
   }
 
   setExitMode() {
     console.log('Setting EXIT mode...');
-    return this.sendCommand('SET_MODE', { mode: 'EXIT' });
+    return this.sendHttpCommand('SET_MODE', 'EXIT');
   }
 
   setEnrollmentMode() {
     console.log('Setting ENROLLMENT mode...');
-    return this.sendCommand('SET_MODE', { mode: 'ENROLLMENT' });
+    return this.sendHttpCommand('SET_MODE', 'ENROLLMENT');
+  }
+
+  // HTTP command method as fallback
+  async sendHttpCommand(command, mode) {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/scanner/send-command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deviceId: 'ESP32-Scanner-001', // Default device ID
+          command,
+          mode,
+          timestamp: Date.now()
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('HTTP command sent successfully:', result);
+        return true;
+      } else {
+        console.error('HTTP command failed:', response.status);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error sending HTTP command:', error);
+      return false;
+    }
   }
 
   resetScanner() {

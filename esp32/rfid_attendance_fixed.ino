@@ -6,8 +6,8 @@
 #include <time.h>
 
 // WiFi credentials - UPDATE THESE WITH YOUR ACTUAL CREDENTIALS
-const char* ssid = "YOUR_WIFI_SSID";         // Replace with your WiFi SSID
-const char* password = "YOUR_WIFI_PASSWORD"; // Replace with your WiFi password
+const char* ssid = "TkV";         // Replace with your WiFi SSID
+const char* password = "Mundwa@2084"; // Replace with your WiFi password
 
 // Backend API configuration - UPDATED TO MATCH YOUR COMPUTER'S IP
 // For development: Your computer's IP address
