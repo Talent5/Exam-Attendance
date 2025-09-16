@@ -6,7 +6,7 @@ import { formatTimeCAT } from '../../utils/timezone';
 const ScannerWidget = () => {
   const [scannerStatus, setScannerStatus] = useState({
     connected: false,
-    mode: 'ATTENDANCE',
+    mode: 'ENTRY',
     lastScan: null,
     isScanning: false
   });
@@ -55,47 +55,62 @@ const ScannerWidget = () => {
           </span>
         </div>
         <div className={`px-2 py-1 rounded text-xs font-medium ${
-          scannerStatus.mode === 'ATTENDANCE' 
-            ? 'bg-blue-100 text-blue-700' 
-            : 'bg-green-100 text-green-700'
+          scannerStatus.mode === 'ENTRY' 
+            ? 'bg-green-100 text-green-700' 
+            : scannerStatus.mode === 'EXIT'
+            ? 'bg-red-100 text-red-700'
+            : 'bg-blue-100 text-blue-700'
         }`}>
           {scannerStatus.mode}
         </div>
       </div>
 
       {/* Quick Mode Switch */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-4">
         <button
-          onClick={() => handleQuickModeSwitch('ATTENDANCE')}
+          onClick={() => handleQuickModeSwitch('ENTRY')}
           disabled={!scannerStatus.connected}
           className={`p-2 text-xs rounded transition-colors ${
-            scannerStatus.mode === 'ATTENDANCE'
-              ? 'bg-blue-500 text-white'
+            scannerStatus.mode === 'ENTRY'
+              ? 'bg-green-500 text-white'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          📋 Attendance
+          � Entry
+        </button>
+        <button
+          onClick={() => handleQuickModeSwitch('EXIT')}
+          disabled={!scannerStatus.connected}
+          className={`p-2 text-xs rounded transition-colors ${
+            scannerStatus.mode === 'EXIT'
+              ? 'bg-red-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          🔴 Exit
         </button>
         <button
           onClick={() => handleQuickModeSwitch('ENROLLMENT')}
           disabled={!scannerStatus.connected}
           className={`p-2 text-xs rounded transition-colors ${
             scannerStatus.mode === 'ENROLLMENT'
-              ? 'bg-green-500 text-white'
+              ? 'bg-blue-500 text-white'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          👤 Enrollment
+          👤 Enroll
         </button>
       </div>
 
       {/* Scanner Instructions */}
       <div className="text-sm text-gray-600">
         {scannerStatus.connected ? (
-          scannerStatus.mode === 'ATTENDANCE' ? (
-            <p>✨ Ready to scan cards for attendance</p>
+          scannerStatus.mode === 'ENTRY' ? (
+            <p>🟢 Ready to scan cards for entry</p>
+          ) : scannerStatus.mode === 'EXIT' ? (
+            <p>🔴 Ready to scan cards for exit</p>
           ) : (
-            <p>🎓 Ready to enroll new students</p>
+            <p>👤 Ready to enroll new students</p>
           )
         ) : (
           <p>⚠️ Scanner disconnected - check hardware</p>

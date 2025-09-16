@@ -18,7 +18,7 @@ router.post('/scan', async (req, res) => {
       });
     }
 
-    const { rfidUid, timestamp, examId } = value;
+    const { rfidUid, timestamp, examId, entryType = 'entry' } = value;
     // Convert timestamp to CAT timezone if provided, otherwise use current CAT time
     const scanTime = timestamp ? 
       moment.tz(timestamp, 'Africa/Harare').toDate() : 
@@ -36,13 +36,14 @@ router.post('/scan', async (req, res) => {
         rfidUid,
         timestamp: scanTime,
         examId,
+        entryType,
         message: 'Unknown RFID card detected'
       });
 
       return res.status(404).json({
         success: false,
         message: 'Unknown RFID card. Please enroll the student first.',
-        data: { rfidUid, timestamp: scanTime, examId }
+        data: { rfidUid, timestamp: scanTime, examId, entryType }
       });
     }
 
@@ -60,7 +61,7 @@ router.post('/scan', async (req, res) => {
         return res.status(404).json({
           success: false,
           message: 'Exam not found or not active',
-          data: { examId, rfidUid, timestamp: scanTime }
+          data: { examId, rfidUid, timestamp: scanTime, entryType }
         });
       }
 
@@ -82,6 +83,7 @@ router.post('/scan', async (req, res) => {
           },
           examId,
           timestamp: scanTime,
+          entryType,
           message: 'Student not enrolled in this exam'
         });
 
@@ -91,7 +93,8 @@ router.post('/scan', async (req, res) => {
           data: { 
             student: { name: student.name, regNo: student.regNo, course: student.course },
             examId, 
-            timestamp: scanTime 
+            timestamp: scanTime,
+            entryType
           }
         });
       }
@@ -111,20 +114,17 @@ router.post('/scan', async (req, res) => {
       const gracePeriod = currentExam.attendanceSettings?.lateEntryGracePeriod || 15;
       const allowedStartTime = new Date(examStartTime.getTime() - gracePeriod * 60000);
 
-      if (scanTime < allowedStartTime) {
+      if (entryType === 'entry' && scanTime < allowedStartTime) {
         return res.status(400).json({
           success: false,
-          message: `Scanning not allowed yet. Exam starts at ${currentExam.startTime}`,
-          data: { examId, examStartTime: currentExam.startTime, currentTime: scanTime }
+          message: `Entry scanning not allowed yet. Exam starts at ${currentExam.startTime}`,
+          data: { examId, examStartTime: currentExam.startTime, currentTime: scanTime, entryType }
         });
       }
 
-      if (scanTime > examEndTime && !currentExam.attendanceSettings?.requireExitScan) {
-        return res.status(400).json({
-          success: false,
-          message: `Exam has ended. Scanning closed at ${currentExam.endTime}`,
-          data: { examId, examEndTime: currentExam.endTime, currentTime: scanTime }
-        });
+      if (entryType === 'exit' && scanTime > examEndTime) {
+        // Allow exit scans even after exam ends
+        console.log(`Late exit scan allowed for ${student.name} after exam end time`);
       }
     }
 
@@ -143,13 +143,19 @@ router.post('/scan', async (req, res) => {
     const existingAttendance = await Attendance.findOne(attendanceFilter);
 
     if (existingAttendance) {
-      // Update existing attendance with latest scan time
-      existingAttendance.timestamp = scanTime;
-      existingAttendance.time = moment.tz(scanTime, 'Africa/Harare').format('HH:mm:ss');
-      if (currentExam && currentExam.attendanceSettings?.requireExitScan) {
+      // Handle entry/exit logic
+      if (entryType === 'entry') {
+        // Update entry time
+        existingAttendance.timestamp = scanTime;
+        existingAttendance.time = moment.tz(scanTime, 'Africa/Harare').format('HH:mm:ss');
+        existingAttendance.entryType = 'entry';
+      } else if (entryType === 'exit') {
+        // Add exit information
+        existingAttendance.exitTimestamp = scanTime;
         existingAttendance.exitTime = moment.tz(scanTime, 'Africa/Harare').format('HH:mm:ss');
-        existingAttendance.status = 'completed';
+        existingAttendance.entryType = 'exit'; // Update to show last scan type
       }
+      
       await existingAttendance.save();
 
       const populatedAttendance = await Attendance.findById(existingAttendance._id)
@@ -162,21 +168,21 @@ router.post('/scan', async (req, res) => {
       // Emit real-time update
       req.io.to('dashboard').emit('attendance-updated', {
         attendance: populatedAttendance,
-        message: currentExam?.attendanceSettings?.requireExitScan ? 
-          `${student.name} exited exam ${currentExam.examId}` :
-          `${student.name} scanned again for ${currentExam?.examId || 'general attendance'}`
+        message: entryType === 'exit' ?
+          `${student.name} exited ${currentExam?.examId || 'attendance'}` :
+          `${student.name} re-entered ${currentExam?.examId || 'attendance'}`
       });
 
       return res.json({
         success: true,
-        message: currentExam?.attendanceSettings?.requireExitScan ?
+        message: entryType === 'exit' ?
           'Exit scan recorded successfully' :
-          'Attendance updated - student already scanned today',
+          'Entry scan updated successfully',
         data: populatedAttendance
       });
     }
 
-    // Create new attendance record
+    // Create new attendance record (first scan of the day)
     const catMoment = moment.tz(scanTime, 'Africa/Harare');
     const attendanceData = {
       studentId: student._id,
@@ -185,8 +191,18 @@ router.post('/scan', async (req, res) => {
       date: catMoment.format('YYYY-MM-DD'),
       time: catMoment.format('HH:mm:ss'),
       dayOfWeek: catMoment.format('dddd'),
-      status: 'present'
+      status: 'present',
+      entryType: entryType || 'entry'
     };
+
+    // Handle exit scan as first scan (unusual case)
+    if (entryType === 'exit') {
+      attendanceData.exitTimestamp = scanTime;
+      attendanceData.exitTime = catMoment.format('HH:mm:ss');
+      // Keep entry timestamp empty for exit-only scans
+      attendanceData.timestamp = null;
+      attendanceData.time = null;
+    }
 
     // Add exam reference if scanning for specific exam
     if (currentExam) {
@@ -219,16 +235,16 @@ router.post('/scan', async (req, res) => {
     // Emit real-time update
     req.io.to('dashboard').emit('new-attendance', {
       attendance: populatedAttendance,
-      message: currentExam ? 
-        `${student.name} marked present for exam ${currentExam.examId}` :
-        `${student.name} marked present`
+      message: entryType === 'exit' ?
+        `${student.name} recorded exit for ${currentExam?.examId || 'attendance'}` :
+        `${student.name} marked present for ${currentExam?.examId || 'attendance'}`
     });
 
     res.status(201).json({
       success: true,
-      message: currentExam ? 
-        `Attendance recorded for exam ${currentExam.examId}` :
-        'Attendance recorded successfully',
+      message: entryType === 'exit' ?
+        `Exit recorded for ${currentExam?.examId || 'attendance'}` :
+        `Entry recorded for ${currentExam?.examId || 'attendance'}`,
       data: populatedAttendance
     });
   } catch (error) {

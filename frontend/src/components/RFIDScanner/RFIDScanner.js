@@ -6,7 +6,7 @@ import { formatTimeCAT } from '../../utils/timezone';
 const RFIDScanner = ({ selectedExam }) => {
   const [scannerStatus, setScannerStatus] = useState({
     connected: false,
-    mode: 'ATTENDANCE',
+    mode: 'ENTRY',
     lastScan: null,
     isScanning: false,
     consecutiveFailures: 0,
@@ -133,13 +133,19 @@ const RFIDScanner = ({ selectedExam }) => {
   };
 
   const getModeIcon = (mode) => {
-    if (mode === 'ATTENDANCE') {
+    if (mode === 'ENTRY') {
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
         </svg>
       );
-    } else {
+    } else if (mode === 'EXIT') {
+      return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3h4a3 3 0 013-3v1" />
+        </svg>
+      );
+    } else if (mode === 'ENROLLMENT') {
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -200,22 +206,41 @@ const RFIDScanner = ({ selectedExam }) => {
       <div className="card">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Scanner Mode Control</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* Attendance Mode Button */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Entry Mode Button */}
           <button
-            onClick={() => handleModeSwitch('ATTENDANCE')}
+            onClick={() => handleModeSwitch('ENTRY')}
             disabled={!scannerStatus.connected}
             className={`p-4 rounded-lg border-2 transition-all duration-200 ${
-              scannerStatus.mode === 'ATTENDANCE'
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+              scannerStatus.mode === 'ENTRY'
+                ? 'border-green-500 bg-green-50 text-green-700'
+                : 'border-gray-300 bg-white text-gray-700 hover:border-green-300 hover:bg-green-50'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <div className="flex items-center justify-center space-x-3">
-              {getModeIcon('ATTENDANCE')}
+              {getModeIcon('ENTRY')}
               <div className="text-left">
-                <div className="font-semibold">Attendance Mode</div>
-                <div className="text-sm opacity-75">Mark student attendance</div>
+                <div className="font-semibold">Entry Mode</div>
+                <div className="text-sm opacity-75">Record student entry</div>
+              </div>
+            </div>
+          </button>
+
+          {/* Exit Mode Button */}
+          <button
+            onClick={() => handleModeSwitch('EXIT')}
+            disabled={!scannerStatus.connected}
+            className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+              scannerStatus.mode === 'EXIT'
+                ? 'border-red-500 bg-red-50 text-red-700'
+                : 'border-gray-300 bg-white text-gray-700 hover:border-red-300 hover:bg-red-50'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            <div className="flex items-center justify-center space-x-3">
+              {getModeIcon('EXIT')}
+              <div className="text-left">
+                <div className="font-semibold">Exit Mode</div>
+                <div className="text-sm opacity-75">Record student exit</div>
               </div>
             </div>
           </button>
@@ -226,8 +251,8 @@ const RFIDScanner = ({ selectedExam }) => {
             disabled={!scannerStatus.connected}
             className={`p-4 rounded-lg border-2 transition-all duration-200 ${
               scannerStatus.mode === 'ENROLLMENT'
-                ? 'border-green-500 bg-green-50 text-green-700'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-green-300 hover:bg-green-50'
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <div className="flex items-center justify-center space-x-3">
@@ -242,13 +267,17 @@ const RFIDScanner = ({ selectedExam }) => {
 
         {/* Current Mode Display */}
         <div className={`p-4 rounded-lg ${
-          scannerStatus.mode === 'ATTENDANCE' ? 'bg-blue-50 border border-blue-200' : 'bg-green-50 border border-green-200'
+          scannerStatus.mode === 'ENTRY' ? 'bg-green-50 border border-green-200' : 
+          scannerStatus.mode === 'EXIT' ? 'bg-red-50 border border-red-200' :
+          'bg-blue-50 border border-blue-200'
         }`}>
           <div className="flex items-center space-x-2">
             {getModeIcon(scannerStatus.mode)}
             <span className="font-medium">
-              {scannerStatus.mode === 'ATTENDANCE' 
-                ? '📋 Ready to scan cards for attendance marking'
+              {scannerStatus.mode === 'ENTRY' 
+                ? '� Ready to scan cards for student entry'
+                : scannerStatus.mode === 'EXIT'
+                ? '🔴 Ready to scan cards for student exit'
                 : '👤 Ready to enroll new students - scan a card to start'
               }
             </span>

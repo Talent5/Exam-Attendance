@@ -66,7 +66,8 @@ const examSchema = Joi.object({
 const scanSchema = Joi.object({
   rfidUid: Joi.string().trim().uppercase().required(),
   timestamp: Joi.date().optional(),
-  examId: Joi.string().trim().uppercase().optional()
+  examId: Joi.string().trim().uppercase().optional(),
+  entryType: Joi.string().valid('entry', 'exit').default('entry')
 });
 
 // Query validation schemas

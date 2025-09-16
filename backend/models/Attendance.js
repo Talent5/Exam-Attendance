@@ -27,6 +27,11 @@ const attendanceSchema = new Schema({
       return moment.tz('Africa/Harare').toDate();
     }
   },
+  exitTimestamp: {
+    type: Date,
+    required: false,
+    default: null
+  },
   date: {
     type: String,
     required: true,
@@ -42,6 +47,11 @@ const attendanceSchema = new Schema({
     default: function() {
       return moment.tz('Africa/Harare').format('HH:mm:ss');
     }
+  },
+  exitTime: {
+    type: String,
+    required: false,
+    default: null
   },
   dayOfWeek: {
     type: String,

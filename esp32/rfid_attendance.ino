@@ -50,13 +50,14 @@ const unsigned long statusInterval = 60000; // Print status every minute
 
 // Scanning modes
 enum ScanMode {
-  ATTENDANCE_MODE = 0,
-  ENROLLMENT_MODE = 1
+  ENTRY_MODE = 0,
+  EXIT_MODE = 1,
+  ENROLLMENT_MODE = 2
 };
 
 // Current scanning mode
-ScanMode currentMode = ATTENDANCE_MODE;
-String modeNames[] = {"ATTENDANCE", "ENROLLMENT"};
+ScanMode currentMode = ENTRY_MODE;
+String modeNames[] = {"ENTRY", "EXIT", "ENROLLMENT"};
 
 // Mode switching variables
 unsigned long lastModeSwitch = 0;
@@ -130,7 +131,7 @@ void setup() {
   displayCurrentMode();
   
   Serial.println("System ready. Scan your RFID card...");
-  Serial.println("Commands: 'status', 'reset', 'mode', 'attendance', 'enrollment'");
+  Serial.println("Commands: 'status', 'reset', 'mode', 'entry', 'exit', 'enrollment'");
 }
 
 void loop() {
@@ -148,8 +149,10 @@ void loop() {
       testSystem();
     } else if (command == "mode") {
       switchMode();
-    } else if (command == "attendance") {
-      setMode(ATTENDANCE_MODE);
+    } else if (command == "entry") {
+      setMode(ENTRY_MODE);
+    } else if (command == "exit") {
+      setMode(EXIT_MODE);
     } else if (command == "enrollment") {
       setMode(ENROLLMENT_MODE);
     } else if (command == "cancel" && enrollmentBuffer.isCollecting) {
@@ -157,7 +160,7 @@ void loop() {
     } else if (enrollmentBuffer.isCollecting) {
       handleEnrollmentInput(command);
     } else {
-      Serial.println("Available commands: status, reset, test, mode, attendance, enrollment");
+      Serial.println("Available commands: status, reset, test, mode, entry, exit, enrollment");
     }
   }
   
@@ -226,15 +229,28 @@ void loop() {
   
   // Handle based on current mode
   bool success = false;
-  if (currentMode == ATTENDANCE_MODE) {
-    success = sendAttendanceData(uid);
+  if (currentMode == ENTRY_MODE) {
+    success = sendAttendanceData(uid, "entry");
     if (success) {
-      Serial.println("✓ Attendance recorded successfully");
+      Serial.println("✓ Entry scan recorded successfully");
       blinkLED(LED_SUCCESS, 3);
       playSuccessSound();
       consecutiveFailures = 0;
     } else {
-      Serial.println("✗ Failed to record attendance");
+      Serial.println("✗ Failed to record entry");
+      blinkLED(LED_ERROR, 3);
+      playErrorSound();
+      consecutiveFailures++;
+    }
+  } else if (currentMode == EXIT_MODE) {
+    success = sendAttendanceData(uid, "exit");
+    if (success) {
+      Serial.println("✓ Exit scan recorded successfully");
+      blinkLED(LED_SUCCESS, 3);
+      playSuccessSound();
+      consecutiveFailures = 0;
+    } else {
+      Serial.println("✗ Failed to record exit");
       blinkLED(LED_ERROR, 3);
       playErrorSound();
       consecutiveFailures++;
@@ -303,7 +319,7 @@ void connectToWiFi() {
   }
 }
 
-bool sendAttendanceData(String uid) {
+bool sendAttendanceData(String uid, String entryType = "entry") {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi not connected. Cannot send data.");
     return false;
@@ -322,8 +338,9 @@ bool sendAttendanceData(String uid) {
   int retryDelay = 1000;
   
   // Create JSON payload
-  DynamicJsonDocument doc(200);
+  DynamicJsonDocument doc(300);
   doc["rfidUid"] = uid;
+  doc["entryType"] = entryType;
   
   // Add timestamp if time is available
   time_t now;
@@ -340,7 +357,9 @@ bool sendAttendanceData(String uid) {
   String jsonString;
   serializeJson(doc, jsonString);
   
-  Serial.print("Sending data: ");
+  Serial.print("Sending ");
+  Serial.print(entryType);
+  Serial.print(" data: ");
   Serial.println(jsonString);
   
   // Retry mechanism
@@ -367,7 +386,7 @@ bool sendAttendanceData(String uid) {
           String message = responseDoc["message"];
           
           if (success) {
-            Serial.println("✓ Backend confirmed attendance recorded");
+            Serial.printf("✓ Backend confirmed %s recorded\n", entryType.c_str());
             http.end();
             return true;
           } else {
@@ -551,7 +570,7 @@ void testSystem() {
   
   // Test API endpoint
   Serial.println("Testing API endpoint...");
-  if (sendAttendanceData("TEST123456")) {
+  if (sendAttendanceData("TEST123456", "entry")) {
     Serial.println("✓ API endpoint OK");
   } else {
     Serial.println("✗ API endpoint FAILED");
@@ -562,10 +581,12 @@ void testSystem() {
 
 // Mode management functions
 void switchMode() {
-  if (currentMode == ATTENDANCE_MODE) {
+  if (currentMode == ENTRY_MODE) {
+    setMode(EXIT_MODE);
+  } else if (currentMode == EXIT_MODE) {
     setMode(ENROLLMENT_MODE);
   } else {
-    setMode(ATTENDANCE_MODE);
+    setMode(ENTRY_MODE);
   }
 }
 
@@ -590,9 +611,12 @@ void displayCurrentMode() {
   Serial.printf("║        MODE: %-18s║\n", modeNames[currentMode].c_str());
   Serial.println("╚════════════════════════════════╝");
   
-  if (currentMode == ATTENDANCE_MODE) {
-    Serial.println("📋 Ready to scan cards for attendance marking");
-    Serial.println("   Just scan any enrolled student card");
+  if (currentMode == ENTRY_MODE) {
+    Serial.println("� Ready to scan cards for student entry");
+    Serial.println("   Scan any enrolled student card to record entry");
+  } else if (currentMode == EXIT_MODE) {
+    Serial.println("🔴 Ready to scan cards for student exit");
+    Serial.println("   Scan any enrolled student card to record exit");
   } else {
     Serial.println("👤 Ready to enroll new students");
     Serial.println("   Scan a new card to start enrollment process");
@@ -601,14 +625,21 @@ void displayCurrentMode() {
 }
 
 void playModeSound() {
-  if (currentMode == ATTENDANCE_MODE) {
-    // Short beep for attendance mode
+  if (currentMode == ENTRY_MODE) {
+    // Single beep for entry mode
     playTone(800, 100);
-  } else {
-    // Double beep for enrollment mode
+  } else if (currentMode == EXIT_MODE) {
+    // Double beep for exit mode
     playTone(1200, 100);
     delay(100);
     playTone(1200, 100);
+  } else {
+    // Triple beep for enrollment mode
+    playTone(1500, 100);
+    delay(50);
+    playTone(1500, 100);
+    delay(50);
+    playTone(1500, 100);
   }
 }
 

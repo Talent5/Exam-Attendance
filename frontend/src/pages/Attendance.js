@@ -206,10 +206,10 @@ const Attendance = () => {
                       Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Time
+                      Entry Time
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Day
+                      Exit Time
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -242,11 +242,27 @@ const Attendance = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {formatDateCAT(record.timestamp, 'long')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {record.time}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm">
+                          {record.time ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              🟢 {record.time}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">No entry</span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {record.dayOfWeek}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm">
+                          {record.exitTime ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              🔴 {record.exitTime}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">No exit</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`badge ${
